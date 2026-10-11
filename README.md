@@ -297,7 +297,7 @@ de arriba hacia abajo.
 
 La semilla principal utilizada es `SEED = 42`. En el notebook publicado se verifica además que el constructor `DQN(...)` recibe explícitamente `seed=SEED`. El notebook conserva las salidas de ejecución, por lo que los resultados, tablas, arquitectura de la red y gráficas pueden inspeccionarse sin necesidad de repetir inmediatamente el entrenamiento.
 
-> Nota de reproducibilidad: para una reproducción bit a bit entre equipos y fechas diferentes es recomendable fijar versiones exactas de todas las dependencias en `requirements.txt`.
+
 
 ---
 
@@ -317,7 +317,7 @@ Taller2_DQN_Acrobot/
     └── baseline_vs_dqn.csv
 ```
 
-Los archivos de resultados se mantienen dentro de `results/`, por lo que las rutas relativas utilizadas en este README funcionan directamente en GitHub.
+
 
 ---
 
