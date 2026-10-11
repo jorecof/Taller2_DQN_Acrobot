@@ -17,7 +17,7 @@
 - **Recompensa:** -1 por cada paso no terminal y 0 al alcanzar la meta
 - **Límite:** 500 pasos por episodio
 
-No se requiere procesamiento visual ni apilamiento de frames porque el estado ya es un vector numérico continuo.
+
 
 ## Flujo DQN
 
