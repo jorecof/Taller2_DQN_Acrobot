@@ -1,8 +1,6 @@
 # Taller 2 — DQN sobre Acrobot-v1
 
-## Objetivo
 
-Resolver el ambiente `Acrobot-v1` de Gymnasium mediante un agente **Deep Q-Network (DQN)**, documentando de forma clara el espacio de observaciones y acciones, la lógica de recompensa, el flujo de entrenamiento, la arquitectura de la red neuronal, los hiperparámetros, los resultados obtenidos y las principales limitaciones y dificultades del proceso.
 
 ## Presentado por
 
