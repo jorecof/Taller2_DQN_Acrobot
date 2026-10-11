@@ -1,0 +1,48 @@
+{
+  "environment": "Acrobot-v1",
+  "algorithm": "DQN",
+  "library": "stable-baselines3",
+  "seed": 42,
+  "policy": "MlpPolicy",
+  "observation_space": {
+    "type": "Box",
+    "shape": [6],
+    "dtype": "float32"
+  },
+  "action_space": {
+    "type": "Discrete",
+    "n": 3,
+    "torques": [-1, 0, 1]
+  },
+  "reward": {
+    "step": -1,
+    "terminal": 0
+  },
+  "episode_limit_steps": 500,
+  "network": {
+    "input_dim": 6,
+    "hidden_layers": [256, 256],
+    "activation": "ReLU",
+    "output_dim": 3
+  },
+  "hyperparameters": {
+    "learning_rate": 0.00063,
+    "buffer_size": 50000,
+    "learning_starts": 0,
+    "batch_size": 128,
+    "gamma": 0.99,
+    "target_update_interval": 250,
+    "train_freq": 4,
+    "gradient_steps": -1,
+    "exploration_fraction": 0.12,
+    "exploration_initial_eps": 1.0,
+    "exploration_final_eps": 0.1,
+    "total_timesteps": 100000
+  },
+  "evaluation": {
+    "dqn_episodes": 30,
+    "random_baseline_episodes": 50,
+    "deterministic_policy": true,
+    "seed_comparison_seeds": [42, 25, 123]
+  }
+}

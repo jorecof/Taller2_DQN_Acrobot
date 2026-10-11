@@ -1,6 +1,10 @@
 __pycache__/
 .ipynb_checkpoints/
+.venv/
 logs/
+logs_dqn/
+results/seed_comparison/logs_seed_*/
+models/
 models/*.zip
 *.pyc
 .DS_Store
