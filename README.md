@@ -98,10 +98,10 @@ L -. sincronización periódica .-> I
 
 El ciclo implementado sigue la lógica clásica de DQN:
 
-1. La observación actual \(s\) ingresa a la red Q online.
+1. La observación actual $s$ ingresa a la red Q online.
 2. La acción se selecciona mediante una política **epsilon-greedy**.
 3. El agente ejecuta la acción en `Acrobot-v1`.
-4. La transición \((s,a,r,s',done)\) se almacena en el **replay buffer**.
+4. La transición $(s,a,r,s',done)$ se almacena en el **replay buffer**.
 5. Se extraen mini-lotes de experiencias para reducir la correlación temporal entre muestras consecutivas.
 6. La **red target** se usa para construir un objetivo de aprendizaje más estable.
 7. La diferencia entre la predicción de la red online y el objetivo genera la pérdida TD.
@@ -112,23 +112,23 @@ El ciclo implementado sigue la lógica clásica de DQN:
 
 Para una transición no terminal, el objetivo usado por DQN puede expresarse como:
 
-\[
+$$
 y = r + \gamma \max_{a'} Q_{target}(s',a')
-\]
+$$
 
 Cuando el estado siguiente es terminal, no se agrega valor futuro:
 
-\[
+$$
 y = r
-\]
+$$
 
 De forma compacta:
 
-\[
-y = r + \gamma (1-done)\max_{a'}Q_{target}(s',a')
-\]
+$$
+y = r + \gamma\,(1-done)\,\max_{a'} Q_{target}(s',a')
+$$
 
-La red online aproxima \(Q(s,a)\), mientras que la red target proporciona un objetivo temporalmente más estable. Esta separación reduce la inestabilidad que aparecería si la misma red modificara simultáneamente la predicción y el valor objetivo.
+La red online aproxima $Q(s,a)$, mientras que la red target proporciona un objetivo temporalmente más estable. Esta separación reduce la inestabilidad que aparecería si la misma red modificara simultáneamente la predicción y el valor objetivo.
 
 ### 2.2 Exploración epsilon-greedy
 
@@ -153,6 +153,7 @@ Las características del problema influyen directamente en el diseño del agente
 - La recompensa es densa pero negativa: cada paso cuesta -1. Por tanto, aprender equivale a minimizar el número de pasos necesarios para alcanzar la meta.
 - El agente debe aprender una estrategia no trivial de acumulación de energía mediante oscilaciones.
 - El límite de 500 pasos permite distinguir entre episodios resueltos y truncados.
+- Una truncación por límite de tiempo **no equivale a un estado terminal del problema**. Conceptualmente, el objetivo de Bellman no debe anular el valor futuro solo porque terminó el tiempo disponible. Stable-Baselines3 contempla esta diferencia mediante el manejo de *timeouts* en el replay buffer (`handle_timeout_termination`), separando truncaciones por límite temporal de terminales reales.
 - La exploración es crítica durante las primeras fases porque una política puramente codiciosa puede quedar atrapada en acciones poco útiles.
 - El uso del replay buffer permite reutilizar experiencias pasadas y rompe parcialmente la correlación temporal entre transiciones consecutivas.
 - La red target estabiliza el objetivo de Bellman al actualizarse con menor frecuencia que la red online.
@@ -180,21 +181,23 @@ Stable-Baselines3 implementa DQN con optimización por gradiente y una pérdida 
 
 ### 4.2 Hiperparámetros
 
-| Hiperparámetro | Valor | Justificación |
+Los valores utilizados son consistentes con una configuración de referencia publicada para DQN en `Acrobot-v1` dentro del ecosistema RL Baselines3 Zoo. En este taller **no se realizó una búsqueda exhaustiva de hiperparámetros**; se empleó dicha configuración como punto de partida y se verificó experimentalmente que converge dentro del pipeline implementado durante 100.000 timesteps.
+
+| Hiperparámetro | Valor | Razón de uso en este experimento |
 |---|---:|---|
-| Learning rate | 0.00063 | Paso de actualización moderado para evitar cambios excesivos en Q |
-| Replay buffer | 50.000 | Permite mantener diversidad de experiencias |
-| `learning_starts` | 0 | El aprendizaje comienza inmediatamente; se conserva como decisión experimental |
-| Batch size | 128 | Proporciona mini-lotes suficientemente estables |
-| Gamma | 0.99 | Da alta importancia a recompensas futuras |
-| Target update interval | 250 | Actualiza periódicamente la red target |
-| Train frequency | 4 | El entrenamiento se activa cada cuatro pasos de interacción |
-| Gradient steps | -1 | Realiza tantas actualizaciones como pasos se recolectaron desde la última fase de entrenamiento |
-| Exploration fraction | 0.12 | Reduce epsilon durante el 12 % inicial |
-| Epsilon inicial | 1.0 | Exploración máxima al inicio |
-| Epsilon final | 0.1 | Mantiene exploración residual |
-| Arquitectura | [256, 256] | Dos capas ocultas densas |
-| Timesteps | 100.000 | Presupuesto total de interacción |
+| Learning rate | 0.00063 | Mantiene actualizaciones suficientemente pequeñas para evitar oscilaciones excesivas en los valores Q, sin volver demasiado lento el aprendizaje |
+| Replay buffer | 50.000 | Permite conservar una colección amplia y diversa de transiciones, reduciendo la correlación temporal entre muestras |
+| `learning_starts` | 0 | Se conservó como parte de la configuración de referencia; implica comenzar a aprender desde el inicio y se reconoce como una elección agresiva |
+| Batch size | 128 | Proporciona un compromiso entre estabilidad de la estimación del gradiente y costo computacional |
+| Gamma | 0.99 | Da alta importancia a recompensas futuras, adecuado porque Acrobot requiere acumular energía durante múltiples pasos |
+| Target update interval | 250 | Mantiene el objetivo fijo durante intervalos cortos y reduce la inestabilidad producida por objetivos que cambian continuamente |
+| Train frequency | 4 | Evita actualizar la red en cada transición y desacopla parcialmente interacción y optimización |
+| Gradient steps | -1 | Hace que el número de actualizaciones se adapte a la cantidad de pasos recolectados desde la última fase de entrenamiento |
+| Exploration fraction | 0.12 | Concentra la mayor reducción de exploración al comienzo, cuando todavía es necesario descubrir secuencias útiles de torque |
+| Epsilon inicial | 1.0 | Garantiza exploración amplia al inicio |
+| Epsilon final | 0.1 | Conserva exploración residual para evitar una política completamente codiciosa durante entrenamiento |
+| Arquitectura | [256, 256] | Aporta capacidad suficiente para aproximar una función Q no lineal a partir de solo seis variables de entrada |
+| Timesteps | 100.000 | Presupuesto de interacción suficiente para observar convergencia práctica en esta ejecución |
 
 Con `train_freq=4` y `gradient_steps=-1`, Stable-Baselines3 realiza, en términos prácticos, un número de pasos de gradiente ligado al número de transiciones recolectadas desde la última actualización.
 
@@ -216,11 +219,13 @@ y el modelo DQN fue construido con `seed=SEED`.
 
 La curva muestra tres fases principales:
 
-1. **Fase inicial:** durante los primeros miles de pasos el comportamiento es cercano al peor caso del ambiente, con episodios próximos a -500. El agente todavía no dispone de experiencias suficientes para identificar una secuencia útil de torques.
-2. **Mejora rápida:** posteriormente el retorno aumenta de manera marcada, indicando que el agente comienza a resolver el entorno en menos pasos.
-3. **Meseta:** aproximadamente después de las primeras decenas de miles de timesteps, el retorno se estabiliza alrededor de valores cercanos a -90 durante entrenamiento, aunque permanece una varianza residual.
+1. **Fase inicial:** en los primeros registros, el agente presenta retornos de **-500**; por ejemplo, a los **2.000** y **4.000 timesteps** todavía no resolvía el ambiente.
+2. **Mejora progresiva:** la media de retorno reportada por Stable-Baselines3 (`ep_rew_mean`, calculada sobre los episodios recientes) mejora de forma sostenida: pasa por valores como **-229 alrededor de 18.361 timesteps** y alcanza por primera vez aproximadamente **-100 en 31.733 timesteps**.
+3. **Meseta:** hacia el final, el entrenamiento se estabiliza en el entorno de **-88**. El último registro del entrenamiento muestra `ep_rew_mean = -88.0` aproximadamente en el timestep **99.887**.
 
-Esta variabilidad es coherente con la exploración epsilon-greedy: aun cuando el agente ya aprendió una estrategia útil, durante entrenamiento mantiene `epsilon=0.1`, por lo que una fracción de las acciones continúa siendo exploratoria.
+La media móvil de 20 episodios representada en la figura confirma visualmente la misma tendencia: una mejora rápida seguida de una meseta relativamente estable. La variabilidad residual es coherente con la exploración epsilon-greedy: aun cuando el agente ya aprendió una estrategia útil, durante entrenamiento mantiene `epsilon=0.1`, por lo que una fracción de las acciones continúa siendo exploratoria.
+
+Estas cifras permiten respaldar cuantitativamente la lectura de la curva en lugar de depender únicamente de una apreciación visual.
 
 ### 5.2 Evaluación final
 
@@ -292,7 +297,7 @@ Taller2_DQN_Acrobot.ipynb
 
 de arriba hacia abajo.
 
-La semilla principal utilizada es `SEED = 42`. El notebook publicado conserva las salidas de ejecución para que los resultados, tablas y gráficas puedan inspeccionarse sin necesidad de repetir inmediatamente el entrenamiento.
+La semilla principal utilizada es `SEED = 42`. En el notebook publicado se verifica además que el constructor `DQN(...)` recibe explícitamente `seed=SEED`. El notebook conserva las salidas de ejecución, por lo que los resultados, tablas, arquitectura de la red y gráficas pueden inspeccionarse sin necesidad de repetir inmediatamente el entrenamiento.
 
 > Nota de reproducibilidad: para una reproducción bit a bit entre equipos y fechas diferentes es recomendable fijar versiones exactas de todas las dependencias en `requirements.txt`.
 
