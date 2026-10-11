@@ -1,0 +1,5 @@
+gymnasium[classic-control]
+stable-baselines3[extra]
+numpy
+pandas
+matplotlib
