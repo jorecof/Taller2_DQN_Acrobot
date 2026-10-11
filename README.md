@@ -1,5 +1,14 @@
 # Taller 2 — DQN sobre Acrobot-v1
 
+**Presentado por:**
+
+- Ernesto Ilich Contreras Hernandez.
+- Jesus Gabriel Castillo Malaver.
+- Noel Eduardo Perez Barrios.
+- Paola Andrea Roa Molina.
+- Ruslan Valery Yaya Chujmanov.
+- Victor Enrique Cantor Beltran.
+
 
 ## Ambiente
 - **Entorno:** `Acrobot-v1`
