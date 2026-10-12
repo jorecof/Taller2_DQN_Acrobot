@@ -1,7 +1,5 @@
 # Taller 2 — DQN sobre Acrobot-v1
 
-
-
 ## Presentado por
 
 - Ernesto Ilich Contreras Hernandez.
@@ -10,6 +8,18 @@
 - Paola Andrea Roa Molina.
 - Ruslan Valery Yaya Chujmanov.
 - Victor Enrique Cantor Beltran.
+
+## Resultados principales
+
+| | Política aleatoria | DQN (semilla 42) | DQN (promedio 3 semillas) |
+|---|---:|---:|---:|
+| Retorno promedio | -500.00 | -83.30 | -79.92 |
+| Pasos promedio por episodio | 500 | 84.3 | 80.9 |
+| Tasa de éxito | 0 % | 100 % | 100 % |
+
+El agente pasa de no resolver nunca el ambiente a resolverlo siempre, en unos 80 pasos. El detalle está en la sección 5.
+
+---
 
 ## 1. Descripción del ambiente
 
@@ -217,11 +227,21 @@ y el modelo DQN fue construido con `seed=SEED`.
 
 ![Curva de aprendizaje](results/dqn_learning_curve.png)
 
-La curva muestra tres fases principales:
+Para describir la curva usamos los datos de `results/dqn_learning_curve.csv`, que tiene los 934 episodios del entrenamiento. Se distinguen cuatro fases:
 
-1. **Fase inicial:** en los primeros registros, el agente presenta retornos de **-500**; por ejemplo, a los **2.000** y **4.000 timesteps** todavía no resolvía el ambiente.
-2. **Mejora progresiva:** la media de retorno reportada por Stable-Baselines3 (`ep_rew_mean`, calculada sobre los episodios recientes) mejora de forma sostenida: pasa por valores como **-229 alrededor de 18.361 timesteps** y alcanza por primera vez aproximadamente **-100 en 31.733 timesteps**.
-3. **Meseta:** hacia el final, el entrenamiento se estabiliza en el entorno de **-88**. El último registro del entrenamiento muestra `ep_rew_mean = -88.0` aproximadamente en el timestep **99.887**.
+| Fase | Timesteps | Episodios | Retorno promedio | Episodios resueltos |
+|---|---|---:|---:|---:|
+| Inicial | 0 a 4.900 | 10 | -487.8 | 10 % |
+| Despegue | 4.900 a 12.000 | 35 | -196.7 | 100 % |
+| Mejora progresiva | 12.000 a 50.000 | 343 | -110.3 | 99.4 % |
+| Meseta | 50.000 a 100.000 | 546 | -90.6 | 100 % |
+
+1. **Inicial:** mientras epsilon está cerca de 1 casi todas las acciones son aleatorias y el agente se queda en -500. El primer episodio resuelto aparece en el timestep **4.879**.
+2. **Despegue:** una vez el replay buffer tiene algunos episodios exitosos, la media móvil sube rápido, de -488 a -170. En el timestep 12.000 epsilon llega a su valor final de 0,1.
+3. **Mejora progresiva:** la media móvil cruza **-100 por primera vez en el timestep 26.991**, después de 167 episodios. En esta fase todavía hubo dos episodios truncados en -500 (timesteps 28.424 y 36.467).
+4. **Meseta:** desde unos 50.000 timesteps no hay más episodios truncados y la media móvil se mueve entre -103 y -80. Termina en **-87,95**.
+
+Hay más episodios en la meseta que en las otras fases porque cada episodio dura menos. También se ve que la segunda mitad del entrenamiento aportó más estabilidad que mejora en el retorno.
 
 La media móvil de 20 episodios representada en la figura confirma visualmente la misma tendencia: una mejora rápida seguida de una meseta relativamente estable. La variabilidad residual es coherente con la exploración epsilon-greedy: aun cuando el agente ya aprendió una estrategia útil, durante entrenamiento mantiene `epsilon=0.1`, por lo que una fracción de las acciones continúa siendo exploratoria.
 
@@ -233,29 +253,41 @@ Estas cifras permiten respaldar cuantitativamente la lectura de la curva en luga
 
 La evaluación final se realizó durante **30 episodios** con la política en modo determinista.
 
+| Métrica | Valor |
+|---|---:|
+| Retorno promedio | -83.30 |
+| Mediana | -77.50 |
+| Desviación estándar | 14.03 |
+| Retorno mínimo / máximo | -120 / -63 |
+| Episodios de más de 100 pasos | 4 de 30 |
+
+La mediana (-77,5) es mejor que el promedio (-83,3). La mayoría de los episodios queda entre -94 y -75, y el promedio baja por unos pocos estados iniciales que al agente le cuestan más (el peor episodio necesitó 121 pasos).
+
 ### 5.3 Comparación con baseline
 
 ![Comparación baseline vs DQN](results/comparacion_retornos.png)
 
-El baseline corresponde a una política aleatoria evaluada durante **50 episodios**.
+El baseline corresponde a una política aleatoria evaluada durante **50 episodios**. Tanto el baseline como la evaluación del DQN reinician el ambiente con la semilla `42 + episodio`, así que en los primeros 30 episodios ambas políticas parten de los mismos estados iniciales.
 
 | Métrica | Baseline aleatorio | DQN |
 |---|---:|---:|
 | Episodios evaluados | 50 | 30 |
-| Retorno promedio | -500.00 | **-77.60** |
-| Desviación estándar | 0.00 | **10.92** |
-| Retorno mínimo | -500.00 | **-109.00** |
-| Retorno máximo | -500.00 | **-62.00** |
-| Longitud promedio | 500.00 | **78.60** |
+| Retorno promedio | -500.00 | **-83.30** |
+| Desviación estándar | 0.00 | **14.03** |
+| Retorno mínimo | -500.00 | **-120.00** |
+| Retorno máximo | -500.00 | **-63.00** |
+| Longitud promedio | 500.00 | **84.30** |
 | Tasa de éxito | 0.0 % | **100.0 %** |
 
-La mejora absoluta del retorno promedio fue de **422.40 puntos**. La longitud promedio del episodio pasó de 500 a 78.60 pasos, lo que representa una reducción aproximada del **84.28 %**.
+La mejora absoluta del retorno promedio fue de **416.70 puntos**. La longitud promedio del episodio pasó de 500 a 84.30 pasos, lo que representa una reducción del **83.14 %**. Dicho de otra forma, el agente resuelve la tarea casi seis veces más rápido que el límite del episodio.
 
 El baseline aleatorio no logró resolver ninguno de los episodios evaluados, mientras que el DQN alcanzó una tasa de éxito del **100 %** en la evaluación final.
 
-La evaluación determinista también explica por qué el retorno final (-77.60) puede ser mejor que parte de los valores observados durante entrenamiento: en evaluación no se utiliza la exploración epsilon-greedy, por lo que el agente ejecuta directamente las acciones que considera de mayor valor.
+La evaluación determinista también explica por qué el retorno final (-83.30) puede ser mejor que parte de los valores observados durante entrenamiento: en evaluación no se utiliza la exploración epsilon-greedy, por lo que el agente ejecuta directamente las acciones que considera de mayor valor.
 
-La comparación con el baseline también puede leerse en términos de pasos. La política aleatoria llega al límite de **500 pasos** en promedio, mientras que el DQN con la semilla principal necesita **78.60 pasos**. Esa reducción de **421.40 pasos** es coherente con la recompensa del ambiente: cada paso no terminal cuesta -1, así que resolver antes equivale directamente a obtener un retorno menos negativo.
+La comparación con el baseline también puede leerse en términos de pasos. La política aleatoria llega al límite de **500 pasos** en promedio, mientras que el DQN con la semilla principal necesita **84.30 pasos**. Esa reducción de **415.70 pasos** es coherente con la recompensa del ambiente: cada paso no terminal cuesta -1, así que resolver antes equivale directamente a obtener un retorno menos negativo.
+
+Un detalle que nos llamó la atención es que el mejor episodio queda siempre alrededor de -62 o -63, en las tres semillas y en todas las variantes que probamos (sección 5.6). Creemos que es cercano al mínimo físico: con un torque de solo ±1, el sistema necesita unos 60 pasos para acumular la energía suficiente. Si es así, el margen de mejora que queda sobre el resultado actual es de unos 20 pasos.
 
 ### 5.4 Comparación entre semillas
 
@@ -271,6 +303,10 @@ Para revisar si el resultado dependía de una sola inicialización, se repitió 
 
 El promedio entre semillas fue **-79.92**, con una desviación entre retornos promedio de **3.60**. Las tres semillas resolvieron todos los episodios evaluados. Esto muestra que, bajo estas tres inicializaciones, el agente aprendió políticas estables y con desempeño parecido. Por esa razón, reportar varias semillas da una evaluación más fuerte que depender únicamente de la ejecución con `SEED = 42`.
 
+Con solo tres semillas, el intervalo de confianza del 95 % para el retorno promedio va de **-88,9 a -71,0** (t de Student con 2 grados de libertad). Todo el intervalo está por encima de -100. Si se juntan los 90 episodios de evaluación, la mediana es -76,5 y 82 de los 90 (91 %) se resolvieron en menos de 100 pasos.
+
+La semilla 42, que es la que usamos en el análisis principal, resultó ser la de peor promedio de las tres. Por eso los resultados de las secciones 5.2 y 5.3 son más bien conservadores.
+
 La semilla `25` produjo un retorno promedio cercano al de `42` y `123`. Su retorno mínimo fue **-147**, peor que el mínimo de las otras dos semillas, pero sin episodios truncados. Esto sugiere variación moderada entre inicializaciones, aunque no una caída estructural del método para este conjunto de semillas.
 
 ### 5.5 Entrenamiento frente a evaluación
@@ -278,6 +314,39 @@ La semilla `25` produjo un retorno promedio cercano al de `42` y `123`. Su retor
 Durante el entrenamiento se mantiene exploración residual (`epsilon_final = 0.1`). Eso significa que una fracción de las acciones sigue siendo aleatoria incluso cuando la red ya aprendió una estrategia útil. Por esa razón, la curva de entrenamiento puede mostrar retornos peores o más variables que la evaluación final.
 
 La evaluación final se ejecuta con `deterministic=True`, sin exploración epsilon-greedy. En ese modo el agente elige la acción con mayor valor Q estimado. Por eso el retorno evaluado puede verse mejor que algunos registros del entrenamiento: mide la política aprendida sin ruido exploratorio.
+
+Se puede medir esa diferencia. Los últimos 100 episodios del entrenamiento promedian -90,71, frente a -83,30 en la evaluación. Unos 7 pasos por episodio es lo que le cuesta al agente seguir explorando con epsilon = 0,1.
+
+### 5.6 Experimento complementario: variantes de DQN
+
+Para entender mejor el algoritmo implementamos DQN directamente en PyTorch (`Taller2_DQN_Acrobot_v2.ipynb`), tomando como base el código de los capítulos 6 y 8 del libro de Lapan. Con esa implementación probamos dos extensiones vistas en clase:
+
+- **Double DQN** (van Hasselt et al., 2015): la red online escoge la mejor acción del siguiente estado y la red target la evalúa. La idea es reducir la sobreestimación de los valores Q.
+- **Dueling DQN** (Wang et al., 2016): la red calcula por separado el valor del estado V(s) y la ventaja de cada acción A(s,a), y luego los combina para obtener Q(s,a).
+
+Las cuatro configuraciones usaron los mismos hiperparámetros, 100.000 timesteps y las semillas 42, 25 y 123. Hubo dos diferencias con el experimento principal: `learning_starts = 1.000` en lugar de 0 y episodios de evaluación con semillas distintas a las de entrenamiento (10.000 a 10.029).
+
+| Agente | Retorno promedio | IC 95 % | Peor episodio | Pasos promedio | Éxito |
+|---|---:|---:|---:|---:|---:|
+| Dueling DQN | -73.08 | [-75.71, -70.45] | -103 | 74.1 | 100 % |
+| SB3 DQN | -79.11 | [-91.86, -66.36] | -117 | 80.1 | 100 % |
+| DQN propio | -79.20 | [-79.42, -78.98] | -141 | 80.2 | 100 % |
+| Double DQN | -96.00 | [-154.12, -37.88] | -500 | 97.0 | 97 % |
+
+![Curvas de aprendizaje de las variantes](results/variantes/curvas_aprendizaje_variantes.png)
+
+![Comparación de agentes](results/variantes/comparacion_agentes.png)
+
+Lo que encontramos:
+
+- **Nuestra implementación da lo mismo que Stable-Baselines3** (-79,20 frente a -79,11), y ambas coinciden con el experimento principal (-79,92). Esto nos da confianza en que el resultado depende del algoritmo y no de la librería. El cambio en `learning_starts` no tuvo un efecto visible.
+- **Dueling DQN fue el mejor**: unos 6 pasos menos por episodio y casi sin diferencia entre semillas. Su intervalo no se cruza con el del DQN propio. Nuestra interpretación es que en Acrobot hay muchos estados donde la acción inmediata importa poco, y separar V(s) de A(s,a) permite aprender ese valor con todas las transiciones.
+- **Double DQN no mejoró.** Con dos semillas quedó parecido al DQN (-81,7 y -83,3), pero con la semilla 123 tres episodios se quedaron en -500. Esto bajó mucho su promedio. Con un intervalo tan amplio no podemos decir que sea peor; solo que no aportó.
+- **No vimos sobreestimación de Q.** El valor teórico promedio de los estados de un episodio de unos 80 pasos, con recompensa -1 y gamma = 0,99, es cercano a -31,6. Las tres variantes terminan con un Q medio entre -28 y -31. Si no hay sobreestimación, es lógico que Double DQN no tenga mucho que corregir.
+
+![Epsilon, pérdida y Q medio](results/variantes/epsilon_perdida_q.png)
+
+Las tablas completas por semilla están en `results/variantes/resumen_resultados.md`.
 
 ---
 
@@ -287,9 +356,9 @@ Los resultados evidencian que el agente logró aprender una política claramente
 
 El comportamiento observado puede conectarse directamente con los mecanismos del algoritmo. El **replay buffer** reduce la dependencia entre muestras consecutivas y permite reutilizar experiencias relevantes. La estrategia **epsilon-greedy** favorece la exploración durante las primeras fases, lo cual es fundamental para descubrir movimientos de oscilación útiles. La **red target** reduce la inestabilidad del aprendizaje al mantener temporalmente fijo el componente utilizado para calcular el objetivo de Bellman.
 
-La evaluación final confirma que el aprendizaje no corresponde únicamente a una mejora anecdótica del entrenamiento: el agente logró un retorno promedio de **-77.60 ± 10.92** y resolvió los **30 de 30 episodios** evaluados, mientras que la política aleatoria obtuvo -500 de retorno promedio y una tasa de éxito del 0 %.
+La evaluación final confirma que el aprendizaje no corresponde únicamente a una mejora anecdótica del entrenamiento: el agente logró un retorno promedio de **-83.30 ± 14.03** y resolvió los **30 de 30 episodios** evaluados, mientras que la política aleatoria obtuvo -500 de retorno promedio y una tasa de éxito del 0 %.
 
-No obstante, existen limitaciones que deben considerarse. El experimento principal se reporta con la semilla `42`, y la comparación adicional con `25` y `123` muestra estabilidad para estas inicializaciones, aunque no garantiza el mismo comportamiento para cualquier semilla. Además, se utilizó DQN estándar; una variante como **Double DQN** permitiría estudiar el posible sesgo de sobreestimación de valores Q. El parámetro `learning_starts=0` hace que el aprendizaje comience con un replay buffer inicialmente pequeño, mientras que mantener epsilon en 0.1 introduce ruido exploratorio durante todo el tramo final de entrenamiento. Finalmente, la recompensa de -1 por paso favorece trayectorias cortas, pero no distingue explícitamente entre estrategias de movimiento de diferente calidad cuando requieren un número similar de pasos.
+No obstante, existen limitaciones que deben considerarse. El experimento principal se reporta con la semilla `42`, y la comparación adicional con `25` y `123` muestra estabilidad para estas inicializaciones, aunque no garantiza el mismo comportamiento para cualquier semilla. Además, el experimento principal usó DQN estándar. En el experimento complementario (5.6) probamos Double DQN y Dueling DQN, pero también con solo tres semillas, así que la ventaja de Dueling habría que confirmarla con más corridas. El parámetro `learning_starts=0` hace que el aprendizaje comience con un replay buffer inicialmente pequeño, mientras que mantener epsilon en 0.1 introduce ruido exploratorio durante todo el tramo final de entrenamiento. Finalmente, la recompensa de -1 por paso favorece trayectorias cortas, pero no distingue explícitamente entre estrategias de movimiento de diferente calidad cuando requieren un número similar de pasos.
 
 La comparación de semillas refuerza esta lectura. El promedio agregado mejora claramente al baseline aleatorio y mantiene una tasa de éxito promedio de **100 %** para las semillas `42`, `25` y `123`. Aun así, para afirmar estabilidad del método, no basta con reportar el mejor entrenamiento: conviene revisar varias inicializaciones y observar tanto retorno promedio como tasa de éxito.
 
@@ -297,7 +366,7 @@ La comparación de semillas refuerza esta lectura. El promedio agregado mejora c
 
 - Se usaron **tres semillas** para la comparación. Es mejor que una sola ejecución, pero sigue siendo una muestra pequeña.
 - No se hizo una búsqueda exhaustiva de hiperparámetros; se partió de una configuración de referencia.
-- Se usó DQN estándar. No se comparó contra Double DQN, Dueling DQN u otros métodos.
+- Double DQN y Dueling DQN se compararon con tres semillas. No se probaron otras extensiones (n-step, prioritized replay, noisy nets) ni métodos de gradiente de política como PPO.
 - La evaluación se hizo en el mismo ambiente `Acrobot-v1`, sin variaciones externas del problema.
 - El costo computacional se mantuvo bajo porque la observación es vectorial y la red es pequeña; aun así, repetir entrenamientos por varias semillas aumenta el tiempo total.
 
@@ -310,6 +379,8 @@ Una de las principales dificultades técnicas fue asegurar que la curva de apren
 Otra dificultad fue comprender la diferencia entre `terminated` y `truncated` en Gymnasium. En este ambiente, `terminated=True` indica que la meta fue alcanzada, mientras que `truncated=True` representa que se llegó al límite temporal. Esta distinción fue necesaria para calcular correctamente la tasa de éxito y evitar clasificar una truncación como una solución del problema.
 
 También fue necesario diferenciar conceptualmente los componentes de DQN. El replay buffer no selecciona acciones: almacena experiencias. Epsilon-greedy controla la exploración. La red online aproxima los valores Q y se actualiza por gradiente. La red target proporciona un objetivo más estable para la actualización de Bellman. Comprender estas funciones por separado permitió interpretar correctamente tanto la implementación como la forma de la curva de aprendizaje.
+
+Otra cosa que aprendimos es lo mucho que puede cambiar una corrida a otra. En el experimento complementario, Double DQN con la semilla 123 falló en 3 de 30 episodios, mientras que con las otras dos semillas resolvió todos. Si solo hubiéramos hecho esa corrida, habríamos sacado una conclusión equivocada sobre el algoritmo. También tuvimos que volver a revisar las cifras del README contra los CSV, porque después de repetir ejecuciones algunos valores habían quedado de corridas anteriores.
 
 Finalmente, la representación del estado también requirió atención. Los ángulos no se entregan directamente, sino mediante seno y coseno, y las dos velocidades angulares tienen rangos distintos. Comprender esta representación fue importante para justificar por qué una MLP puede trabajar directamente con las observaciones sin necesidad de procesamiento visual ni apilamiento de frames.
 
@@ -356,6 +427,8 @@ python seed_comparison.py
 
 Ese script entrena el mismo DQN con las semillas `42`, `25` y `123`, evalúa cada modelo durante 30 episodios y escribe los resultados en `results/seed_comparison/`.
 
+El experimento complementario está en `Taller2_DQN_Acrobot_v2.ipynb`. Entrena 12 modelos (4 agentes por 3 semillas) y en CPU tarda unos 25 minutos. Las figuras y el resumen que se usan en este README están copiados en `results/variantes/`.
+
 ### 8.1 Costo de ejecución
 
 El experimento principal no requiere GPU. En una máquina local con CPU, el entrenamiento de una semilla es abordable porque la observación tiene seis variables y la red es una MLP de dos capas. La comparación entre semillas entrena tres modelos completos, por lo que tarda más que el notebook principal, pero sigue siendo viable sin Colab para este ambiente.
@@ -370,6 +443,7 @@ El experimento principal no requiere GPU. En una máquina local con CPU, el entr
 Taller2_DQN_Acrobot/
 ├── README.md
 ├── Taller2_DQN_Acrobot.ipynb
+├── Taller2_DQN_Acrobot_v2.ipynb
 ├── requirements.txt
 ├── seed_comparison.py
 ├── run_config.json
@@ -379,6 +453,7 @@ Taller2_DQN_Acrobot/
     ├── dqn_evaluation.png
     ├── comparacion_retornos.png
     ├── seed_comparison/
+    ├── variantes/
     ├── evaluation_summary.csv
     └── baseline_vs_dqn.csv
 ```
@@ -400,22 +475,32 @@ Taller2_DQN_Acrobot/
 | `results/seed_comparison/seed_aggregate.csv` | Promedio y variabilidad entre semillas | Resume la robustez del entrenamiento |
 | `results/seed_comparison/seed_return_comparison.png` | Retorno promedio por semilla | Visualiza diferencias entre semillas |
 | `results/seed_comparison/seed_evaluation_episodes.csv` | Evaluación por episodio y semilla | Permite auditar fallos o truncamientos puntuales |
+| `results/variantes/resumen_resultados.md` | Resultados de DQN, Double DQN y Dueling DQN por semilla | Respalda la sección 5.6 |
+| `results/variantes/*.png` | Curvas de aprendizaje, comparación de agentes, epsilon, pérdida y Q medio | Figuras de la sección 5.6 |
 | `run_config.json` | Ambiente, semilla, arquitectura e hiperparámetros | Deja trazabilidad de la configuración experimental |
 
 ---
 
 ## 11. Conclusión
 
-El proyecto cumple el objetivo de formular `Acrobot-v1` como un proceso de decisión, entrenar un agente DQN y evaluar su desempeño con métricas reproducibles. El agente supera claramente al baseline aleatorio: reduce la longitud promedio de 500 a 78.60 pasos en la evaluación principal y alcanza 100 % de éxito con `SEED = 42`.
+El proyecto cumple el objetivo de formular `Acrobot-v1` como un proceso de decisión, entrenar un agente DQN y evaluar su desempeño con métricas reproducibles. El agente supera claramente al baseline aleatorio: reduce la longitud promedio de 500 a 84,30 pasos en la evaluación principal y alcanza 100 % de éxito con `SEED = 42`. Llega al umbral de -100 en unos 27.000 timesteps y el entrenamiento completo toma un par de minutos en CPU.
 
-La comparación entre semillas agrega una lectura más rigurosa. Dos semillas logran 100 % de éxito, mientras que una tercera presenta menor estabilidad. Esto permite concluir que DQN es adecuado para el ambiente, pero que su desempeño puede depender de la inicialización y de la exploración temprana. La evidencia principal no queda limitada a una sola corrida.
+La comparación entre semillas muestra que el resultado no depende de la inicialización: las tres semillas resolvieron los 30 episodios, con promedios entre -76 y -83. Además, nuestra implementación en PyTorch llegó al mismo resultado que Stable-Baselines3.
+
+Las características del ambiente explican en buena parte por qué DQN funciona bien aquí: el estado es un vector pequeño (basta una MLP) y solo hay tres acciones discretas. También se ve el efecto de cada componente del algoritmo. La exploración explica la meseta inicial en -500 y la diferencia entre entrenamiento y evaluación. El replay buffer y la red target permiten que el aprendizaje sea estable.
+
+De las variantes probadas, Dueling DQN dio el mejor resultado (-73,08) y Double DQN no aportó, porque no encontramos sobreestimación de los valores Q. Esto nos deja como lección que las mejoras de DQN no se deben aplicar por defecto: depende del problema. Como trabajo futuro quedaría repetir la comparación con más semillas y probar otras extensiones, como n-step returns o prioritized replay.
 
 ---
 
 ## 12. Referencias
 
 - Gymnasium — `Acrobot-v1`.
+- Mnih, V., et al. (2013). *Playing Atari with Deep Reinforcement Learning*. arXiv:1312.5602.
 - Mnih, V., et al. (2015). *Human-level control through deep reinforcement learning*. Nature, 518.
-- Lapan, M. (2020). *Deep Reinforcement Learning Hands-On* (2.ª ed.). Packt.
+- van Hasselt, H., Guez, A. y Silver, D. (2015). *Deep Reinforcement Learning with Double Q-learning*. arXiv:1509.06461.
+- Wang, Z., et al. (2016). *Dueling Network Architectures for Deep Reinforcement Learning*. arXiv:1511.06581.
+- Sutton, R. y Barto, A. (2018). *Reinforcement Learning: An Introduction* (2.ª ed.). MIT Press.
+- Lapan, M. (2024). *Deep Reinforcement Learning Hands-On* (3.ª ed.). Packt.
 - Stable-Baselines3 — implementación de DQN.
 - RL Baselines3 Zoo — configuraciones e hiperparámetros de referencia para aprendizaje por refuerzo.
